@@ -191,6 +191,8 @@ public class MainActivity extends AppCompatActivity {
             if(con_status){
                 thread = new Thread_check_socket_status(bluetoothSocket,handler_change_text,vibrator);
                 thread.start();
+//                Bluetooth_class thread_bluetooth=new Bluetooth_class(bluetoothSocket,textview,vibrator);
+//                thread_bluetooth.start();
             }else{
                 text_to_Speech("Please Connect to the system first");
             }
@@ -358,72 +360,80 @@ public class MainActivity extends AppCompatActivity {
         @RequiresApi(api = Build.VERSION_CODES.O)
         public void run(){
             boolean check_status=true;
-            int count_this=0;
-            String string2 = "1000";
+            String string2 = "";
             while(check_status){
+
                 try {
-                    handler.post(new Runnable(){
-                        public void run() {
-                            textview.setText("start receiving");
-                        }
-                    });
                     outputStream = socket.getOutputStream();
                     outputStream.write(48);
-                    inputStream = socket.getInputStream();
-                    while(inputStream.available() == 0) {
-                        inputStream = socket.getInputStream();
-                    }
-                    int available = inputStream.available();
-                    byte[] bytes = new byte[available];
-                    inputStream.read(bytes, 0, available);
-                    string2 = new String(bytes);
+                } catch (IOException exception) {
+                    check_status=false;
+
+                }
+                    if(check_status){
+                        try {
+                            inputStream = socket.getInputStream();
+                            while(inputStream.available() == 0) {
+                                inputStream = socket.getInputStream();
+                            }
+                            int available = inputStream.available();
+                            byte[] bytes = new byte[available];
+                            inputStream.read(bytes, 0, available);
+                            string2 = new String(bytes);
 //                    show_data(Integer.parseInt(string2));
 //                    int received_data=Integer.parseInt(string2);
-                    int[] int_array=new int[3];
-                    if(available<2){
-                        int_array[0]=Character.getNumericValue((char)bytes[0]);
-                        define_and_show_data(data_visual_type,int_array[0]);
-                        handler.post(new Runnable(){
-                            public void run() {
-                                textview.setText(String.valueOf(String.valueOf(int_array[0])));
-                            }
-                        });
+                            int[] int_array=new int[3];
+                            if(available<2){
+                                int_array[0]=Character.getNumericValue((char)bytes[0]);
+//                        define_and_show_data(data_visual_type,int_array[0]);
+                                handler.post(new Runnable(){
+                                    public void run() {
+                                        textview.setText(String.valueOf(String.valueOf(int_array[0])));
+                                    }
+                                });
+                                text_to_Speech(String.valueOf(int_array[0]));
 
-                    }else if(available<3){
-                        int_array[0]=Character.getNumericValue((char)bytes[0]);
-                        int_array[1]=Character.getNumericValue((char)bytes[1]);
-                        int_array[0]=int_array[0]*10+int_array[1];
-                        define_and_show_data(data_visual_type,int_array[0]);
-                        handler.post(new Runnable(){
-                            public void run() {
-                                textview.setText(String.valueOf(String.valueOf(int_array[0])));
+                            }else if(available<3){
+                                int_array[0]=Character.getNumericValue((char)bytes[0]);
+                                int_array[1]=Character.getNumericValue((char)bytes[1]);
+                                int_array[0]=int_array[0]*10+int_array[1];
+//                        define_and_show_data(data_visual_type,int_array[0]);
+                                handler.post(new Runnable(){
+                                    public void run() {
+                                        textview.setText(String.valueOf(String.valueOf(int_array[0])));
+                                    }
+                                });
+                                text_to_Speech(String.valueOf(int_array[0]));
+                            }else{
+                                int_array[0]=Character.getNumericValue((char)bytes[0]);
+                                int_array[1]=Character.getNumericValue((char)bytes[1]);
+                                int_array[2]=Character.getNumericValue((char)bytes[2]);
+                                int_array[0]=int_array[0]*100+int_array[1]*10+int_array[2];
+//                        define_and_show_data(data_visual_type,int_array[0]);
+                                handler.post(new Runnable(){
+                                    public void run() {
+                                        textview.setText(String.valueOf(String.valueOf(int_array[0])));
+                                    }
+                                });
+                                text_to_Speech(String.valueOf(int_array[0]));
                             }
-                        });
+                            inputStream.read();
+                        } catch (IOException exception) {
+                            check_status=false;
+                            handler.post(new Runnable(){
+                                public void run() {
+                                    textview.setText("Connection Lost");
+
+                                }
+                            });
+                            text_to_Speech("Warning, Connection to the system has been lost.");
+                        }
+
                     }else{
-                        int_array[0]=Character.getNumericValue((char)bytes[0]);
-                        int_array[1]=Character.getNumericValue((char)bytes[1]);
-                        int_array[2]=Character.getNumericValue((char)bytes[2]);
-                        int_array[0]=int_array[0]*100+int_array[1]*10+int_array[2];
-                        define_and_show_data(data_visual_type,int_array[0]);
-                        handler.post(new Runnable(){
-                            public void run() {
-                                textview.setText(String.valueOf(String.valueOf(int_array[0])));
-                            }
-                        });
+                        text_to_Speech("Warning, Connection to the system has been lost.");
                     }
 
 
-                    inputStream.read();
-                } catch (IOException | InterruptedException exception) {
-                    check_status=false;
-                    handler.post(new Runnable(){
-                        public void run() {
-                            textview.setText("Connection Lost");
-
-                        }
-                    });
-                    text_to_Speech("Warning, Connection to the system has been lost.");
-                }
 
             }
             try {
@@ -431,7 +441,11 @@ public class MainActivity extends AppCompatActivity {
                 inputStream.close();
                 socket.close();
             } catch (IOException exception) {
-                exception.printStackTrace();
+                handler.post(new Runnable(){
+                    public void run() {
+                        textview.setText(String.valueOf("socket and IO close Exception"));
+                    }
+                });
             }
 
         }
