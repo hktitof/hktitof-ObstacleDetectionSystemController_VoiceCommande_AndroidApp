@@ -40,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private int var=0;
     private MediaPlayer mp = null;
     private Button button=null;
+    private String command_text;
     BluetoothAdapter bluetoothAdapter=null;
     TextToSpeech textToSpeech=null;
     BluetoothDevice bluetoothDevice=null;
@@ -52,8 +53,12 @@ public class MainActivity extends AppCompatActivity {
     private final int DATATYPE_VIBRATION=2;
     private int data_visual_type=2;
     private int data_max_value=50;
-    Thread_check_socket_status thread = new Thread_check_socket_status();
+    private Thread_check_socket_status thread = new Thread_check_socket_status();
 
+
+    // la methode pour demmarer l'activite et au meme temps
+    // super.onCreate(savedInstanceState); est pour sevaugarder les changements
+    // Build.VERSION_CODES.M = Android M
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
         }
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
     }
-
+    // cette ce le methode qui va executer quand on click sur Button
     public void Changetext(View view) throws InterruptedException {
         var++;
         textview.setText("clicked for "+String.valueOf(var));
@@ -87,6 +92,8 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
+    // cette method pour verifier si Android Speech est disponible sur le telephone et passer le resulat a la mathode onActivityResult
+    //
     public void GetSpeech(View view){
         Intent intent_speech = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent_speech.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
@@ -97,7 +104,8 @@ public class MainActivity extends AppCompatActivity {
            text_to_Speech("Your device don't support Speech input");
        }
     }
-
+    // cette methode est pour determiner le Intent est le resulatat en executant des procedures
+    // exemple Intent de textToSpeech si est succee alors on pass le code 10
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -116,6 +124,7 @@ public class MainActivity extends AppCompatActivity {
                     Set_textview(result.get(0).toString());
                     try {
                         Define_commande(result.get(0));
+                        command_text=result.get(0);
 
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -124,13 +133,15 @@ public class MainActivity extends AppCompatActivity {
             break;
         }
     }
-
+    // chaque message recu par cette method android speech il le dire en anglais
     public void text_to_Speech(String speech){
         int s = textToSpeech.speak(speech,TextToSpeech.QUEUE_FLUSH,null);
     }
+    // le methode pour changer le contenue de textview
     public void Set_textview(String speech){
         textview.setText(speech);
     }
+    // cette method est pour definer la commande et lancer des procedures
     public void Define_commande(String command) throws InterruptedException {
         if(command.toLowerCase(Locale.ROOT).equals("enable bluetooth")){
             if(!bluetoothAdapter.isEnabled()){
@@ -179,7 +190,7 @@ public class MainActivity extends AppCompatActivity {
                     }else{
                         con_status=false;
                         text_to_Speech("could not connect to the system, please turn off, then turn on the system and try again");
-                        bluetoothSocket.close();// close the socket if we didn't establish the connection
+                        bluetoothSocket.close();// close socket ila masd9atch le connection
                     }
 
                 }catch(IOException e){
@@ -191,8 +202,6 @@ public class MainActivity extends AppCompatActivity {
             if(con_status){
                 thread = new Thread_check_socket_status(bluetoothSocket,handler_change_text,vibrator);
                 thread.start();
-//                Bluetooth_class thread_bluetooth=new Bluetooth_class(bluetoothSocket,textview,vibrator);
-//                thread_bluetooth.start();
             }else{
                 text_to_Speech("Please Connect to the system first");
             }
@@ -202,6 +211,7 @@ public class MainActivity extends AppCompatActivity {
                 try{
                     data_max_value=Integer.valueOf(command.substring(8));
                 }catch (Exception e){
+                    // if we didn't captured the exact value for example he said "change max bla" bla is not a number
                     text_to_Speech("Error Try again");
                     check_max_value=false;
                 }
@@ -222,13 +232,13 @@ public class MainActivity extends AppCompatActivity {
             text_to_Speech("i can't define your command");
         }
     }
-    //activate_bluetooth not used yet
+    //cette method est pour activer Bluetooth sans autorisation de l'utilisateur
     public void activate_bluetooth(){
         bluetoothAdapter.enable();
         text_to_Speech("Bluetooth is Enabled");
 
     }
-
+    // ce Handler est utilise pour faire des modification a le textView dans une Thread
     Handler handler_text_view = new Handler(new Handler.Callback() {
 
         @Override
@@ -245,20 +255,7 @@ public class MainActivity extends AppCompatActivity {
             return false;
         }
     });
-    private class Speech_saying_value extends Thread{
-        private String speech;
-        public Speech_saying_value(){
-
-        }
-        public Speech_saying_value(String speech){
-            this.speech=speech;
-        }
-        public void run(){
-
-        }
-    }
-
-
+    // cette Class est la classe principal pour tous qui est concerne Bluetooth
     private class Thread_check_socket_status extends Thread{
         private BluetoothSocket socket;
         private Handler handler;
@@ -273,23 +270,10 @@ public class MainActivity extends AppCompatActivity {
             this.handler=handler;
             this.vibrator=vibrator;
         }
-        @RequiresApi(api = Build.VERSION_CODES.O)
-        void define_and_show_data(int data_type, int input) throws InterruptedException {
-            if(data_type == 1){
-                text_to_Speech(String.valueOf(input));
-                if(input<10){
-                    this.sleep(2000);
-                }else if(input<99){
-                    this.sleep(3000);
-                }else{
-                    this.sleep(3500);
-                }
 
-            }else if(data_type == 2){
-                show_data_vibration(input);
-                Thread.sleep(500);
-            }
-        }
+
+        // method pour la vibration avec la detection de SDK_INT
+        // Build.VERSION_CODES.O c'est a dire SDK 26 ou on peut dire Android 8
         @RequiresApi(api = Build.VERSION_CODES.O)
         void show_data_vibration(int input_data) throws InterruptedException {
             boolean vibrate_version=true;
@@ -338,6 +322,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
+        // le vibration si SDK est inferieur a 26
         void vibrate_function_less_than_26(int input){
             handler.post(new Runnable(){
                 public void run() {
@@ -346,6 +331,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         }
+        // le vibration si SDK est superieur a 26
         void vibrate_function_greater_than_26(int input){
             handler.post(new Runnable(){
                 @RequiresApi(api = Build.VERSION_CODES.O)
@@ -356,7 +342,7 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-
+        // la methode run qui va executer directement apres qu'on appelle la methode start()
         @RequiresApi(api = Build.VERSION_CODES.O)
         public void run(){
             boolean check_status=true;
@@ -380,45 +366,56 @@ public class MainActivity extends AppCompatActivity {
                             byte[] bytes = new byte[available];
                             inputStream.read(bytes, 0, available);
                             string2 = new String(bytes);
-//                    show_data(Integer.parseInt(string2));
-//                    int received_data=Integer.parseInt(string2);
+
                             int[] int_array=new int[3];
                             if(available<2){
                                 int_array[0]=Character.getNumericValue((char)bytes[0]);
-//                        define_and_show_data(data_visual_type,int_array[0]);
+
                                 handler.post(new Runnable(){
                                     public void run() {
                                         textview.setText(String.valueOf(String.valueOf(int_array[0])));
                                     }
                                 });
-                                text_to_Speech(String.valueOf(int_array[0]));
+                                if(command_text.toLowerCase(Locale.ROOT).equals("change to vibration")){
+                                    show_data_vibration(int_array[0]);
+                                }else if(command_text.toLowerCase(Locale.ROOT).equals("change to speak")){
+                                    text_to_Speech(String.valueOf(int_array[0]));
+                                }
+
 
                             }else if(available<3){
                                 int_array[0]=Character.getNumericValue((char)bytes[0]);
                                 int_array[1]=Character.getNumericValue((char)bytes[1]);
                                 int_array[0]=int_array[0]*10+int_array[1];
-//                        define_and_show_data(data_visual_type,int_array[0]);
+
                                 handler.post(new Runnable(){
                                     public void run() {
                                         textview.setText(String.valueOf(String.valueOf(int_array[0])));
                                     }
                                 });
-                                text_to_Speech(String.valueOf(int_array[0]));
+                                if(command_text.toLowerCase(Locale.ROOT).equals("change to vibration")){
+                                    show_data_vibration(int_array[0]);
+                                }else if(command_text.toLowerCase(Locale.ROOT).equals("change to speak")){
+                                    text_to_Speech(String.valueOf(int_array[0]));
+                                }
                             }else{
                                 int_array[0]=Character.getNumericValue((char)bytes[0]);
                                 int_array[1]=Character.getNumericValue((char)bytes[1]);
                                 int_array[2]=Character.getNumericValue((char)bytes[2]);
                                 int_array[0]=int_array[0]*100+int_array[1]*10+int_array[2];
-//                        define_and_show_data(data_visual_type,int_array[0]);
                                 handler.post(new Runnable(){
                                     public void run() {
                                         textview.setText(String.valueOf(String.valueOf(int_array[0])));
                                     }
                                 });
-                                text_to_Speech(String.valueOf(int_array[0]));
+                                if(command_text.toLowerCase(Locale.ROOT).equals("change to vibration")){
+                                    show_data_vibration(int_array[0]);
+                                }else if(command_text.toLowerCase(Locale.ROOT).equals("change to speak")){
+                                    text_to_Speech(String.valueOf(int_array[0]));
+                                }
                             }
                             inputStream.read();
-                        } catch (IOException exception) {
+                        } catch (IOException | InterruptedException exception) {
                             check_status=false;
                             handler.post(new Runnable(){
                                 public void run() {
