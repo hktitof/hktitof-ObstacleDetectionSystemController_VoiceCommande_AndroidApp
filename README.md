@@ -12,11 +12,6 @@
 
 - EBSA - Electronic Blind System Anaflous
 
----
-
-### Project Link :
-
-- Pig Game - [click here](https://pig-game-ten.vercel.app/)
 
 ---
 
@@ -51,7 +46,7 @@ the purpose of this Android app is helping blind people, by connecting the Andro
 ##### Step 1 : cloning the repo to your local machine
 
 ```sh
-    git https://github.com/hktitof/ObstacleDetection2
+    git https://github.com/hktitof/hktitof-ObstacleDetectionSystemController_VoiceCommande_AndroidApp
 ```
 
 ---
